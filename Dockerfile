@@ -20,8 +20,15 @@ COPY configuration.xml .
 RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force; \
     New-Item -Path 'C:\Windows\SysWOW64\config\systemprofile\Desktop' -ItemType Directory -Force
 
-RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19725-20126.exe" -OutFile "odt.exe"; \
+RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19725-20126.exe" \
+        -OutFile "odt.exe" -UseBasicParsing; \
+    $size = (Get-Item odt.exe).Length; \
+    if ($size -lt 1MB) { throw "ODT download too small: $size bytes" }; \
     Start-Process ./odt.exe -ArgumentList '/quiet /extract:.' -Wait; \
+    Write-Host "Downloading Office source files..."; \
+    Start-Process ./setup.exe -ArgumentList '/download configuration.xml' -Wait; \
+    if (-not (Test-Path 'C:\setup\officesource')) { throw "Office source download failed" }; \
+    Write-Host "Installing Office from local source..."; \
     Start-Process ./setup.exe -ArgumentList '/configure configuration.xml' -Wait; \
     $timeout = 600; $elapsed = 0; \
     while (-not (Test-Path 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE') -and $elapsed -lt $timeout) { \
