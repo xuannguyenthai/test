@@ -18,6 +18,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker Image
+        env:
+          DOCKER_BUILDKIT: 1
         run: docker build --progress=plain -t starfall07g/window:latest .
 
       - name: Push Docker Image
