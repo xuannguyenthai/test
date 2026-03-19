@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/windows/servercore:ltsc2022
 # Set shell to PowerShell for better error handling
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-WORKDIR C:\odt
+WORKDIR "C:/odt"
 
 # Download the latest Office Deployment Tool (verified link)
 ADD https://download.microsoft.com odtsetup.exe
