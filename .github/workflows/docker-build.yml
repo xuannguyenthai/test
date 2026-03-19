@@ -18,7 +18,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker Image
-        run: docker build --progress=plain -t starfall07g/window:latest .
+        run: docker build -t starfall07g/window:latest .
 
       - name: List files in data/out
         run: docker run --rm starfall07g/window:latest powershell -Command "Get-ChildItem -Path C:\app\data\out -Recurse"
