@@ -11,7 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
+      - name: Log xl_pdf to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -20,8 +20,8 @@ jobs:
       - name: Build Docker Image
         run: docker build -t starfall07g/window:latest .
 
-      - name: List files in data/out
-        run: docker run --rm starfall07g/window:latest powershell -Command "Get-ChildItem -Path C:\app\data\out -Recurse"
+      - name: List files xl_pdf data/out
+        run: docker run --rm starfall07g/window:latest powershell -Command "Get-ChildItem -Path C:\app\data\in\p1\xl_pdf -Recurse"
 
       - name: Push Docker Image
         run: docker push starfall07g/window:latest

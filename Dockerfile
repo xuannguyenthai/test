@@ -40,4 +40,4 @@ WORKDIR /app
 COPY . .
 
 RUN pip install -r requirements.txt
-RUN python C:\\app\\excel_to_pdf.py
+RUN python C:\\app\\xl_pdf_watcher.py --interval 5 --pdf-mode standard

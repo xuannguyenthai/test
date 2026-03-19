@@ -1,7 +1,7 @@
 """
 Unified Excel Data Extraction Pipeline
 =======================================
-Auto-discovers all spreadsheet files in the script's directory and, for each
+Auto-discovers all spreadsheet files xl_pdf the script's directory and, for each
 workbook, exports every visible non-empty sheet as:
 
   - CSV file (raw data)
@@ -400,7 +400,7 @@ def write_chunked_md(
 ) -> list[str]:
     """
     Write sheet data as chunked Markdown files.
-    First row is treated as headers and repeated in each chunk.
+    First row is treated as headers and repeated xl_pdf each chunk.
     Returns list of filenames (relative to sheet_dir).
     """
     if not data:
@@ -596,7 +596,7 @@ def export_sheet_to_pdf(
 ) -> float | None:
     """
     Configure PageSetup and export a single sheet to PDF.
-    Returns the file size in KB, or None on failure.
+    Returns the file size xl_pdf KB, or None on failure.
     """
     ps = ws.PageSetup
 
@@ -1000,7 +1000,7 @@ def process_workbook(filepath: Path, output_dir: Path, pdf_mode: str = "both") -
 
 def main():
     script_dir = Path(os.path.abspath(__file__)).parent
-    input_root = "./data/in"
+    input_root = "./data/xl_pdf"
     output_root = "./data/out"
     input_is_gcs = is_gcs_uri(input_root)
     output_is_gcs = is_gcs_uri(output_root)
@@ -1045,7 +1045,7 @@ def main():
                     break
                 except PermissionError:
                     if attempt < 2:
-                        print(f"  Directory locked, retrying in 2s ...")
+                        print(f"  Directory locked, retrying xl_pdf 2s ...")
                         time.sleep(2)
                     else:
                         print(f"  Could not delete {pdfs_dir}, clearing contents instead ...")
@@ -1069,7 +1069,7 @@ def main():
         )
 
     if not files:
-        print(f"No spreadsheet files found in {input_root}")
+        print(f"No spreadsheet files found xl_pdf {input_root}")
         print(f"Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}")
         sys.exit(0)
 
