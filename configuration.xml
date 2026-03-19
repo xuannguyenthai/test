@@ -1,6 +1,6 @@
 <Configuration>
-  <Add OfficeClientEdition="64" Channel="Current" SourcePath="C:\setup\officesource">
-    <Product ID="O365ProPlusRetail">
+  <Add OfficeClientEdition="64" Channel="PerpetualVL2019" SourcePath="C:\setup\officesource">
+    <Product ID="ProPlus2019Volume">
       <Language ID="en-us" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
@@ -15,7 +15,8 @@
     </Product>
   </Add>
   <Display Level="None" AcceptEULA="TRUE" />
-  <Property Name="SharedComputerLicensing" Value="1" />
-  <Property Name="AUTOACTIVATE" Value="1" />
+  <Property Name="AUTOACTIVATE" Value="0" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
   <Updates Enabled="FALSE" />
+  <Logging Level="Standard" Path="C:\setup\logs" />
 </Configuration>
