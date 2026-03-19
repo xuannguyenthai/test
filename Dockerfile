@@ -20,7 +20,7 @@ COPY configuration.xml .
 RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force; \
     New-Item -Path 'C:\Windows\SysWOW64\config\systemprofile\Desktop' -ItemType Directory -Force
 
-RUN Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkID=626065" -OutFile "odt.exe"; \
+RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19725-20126.exe" -OutFile "odt.exe"; \
     Start-Process ./odt.exe -ArgumentList '/quiet /extract:.' -Wait; \
     Start-Process ./setup.exe -ArgumentList '/configure configuration.xml' -Wait; \
     $timeout = 600; $elapsed = 0; \
