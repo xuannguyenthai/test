@@ -1,3 +1,4 @@
+# Use Server Core for a smaller footprint
 FROM mcr.microsoft.com/windows/servercore:ltsc2025
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
@@ -7,9 +8,10 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# 2. Install Python and Visual C++ Redistributable
+# 2. Install Python and Visual C++ Redistributables
 RUN choco install python --version=3.12.0 -y; \
-    choco install vcredist140 -y
+    choco install vcredist140 -y; \
+    choco install vcredist2019 -y
 
 # 3. Create Desktop directories required for Excel COM automation on Server Core
 RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force; \
@@ -33,7 +35,7 @@ RUN Write-Host 'Downloading Office Deployment Tool...'; \
     if (-not (Test-Path 'setup.exe')) { throw 'ODT extraction failed - setup.exe not found after extraction' }; \
     Write-Host 'ODT extracted successfully'
 
-RUN Write-Host 'Downloading Office source files (PerpetualVL2019)...'; \
+RUN Write-Host 'Downloading Office source files (PerpetualVL2021)...'; \
     & ./setup.exe /download configuration.xml; \
     if ($LASTEXITCODE -ne 0) { throw ('Office source download failed: exit code ' + $LASTEXITCODE) }; \
     if (-not (Test-Path 'C:\setup\officesource')) { throw 'Office source directory not created' }; \
@@ -42,15 +44,18 @@ RUN Write-Host 'Downloading Office source files (PerpetualVL2019)...'; \
 RUN Write-Host 'Installing Office...'; \
     & ./setup.exe /configure configuration.xml; \
     if ($LASTEXITCODE -ne 0) { \
-        Write-Host '--- Last 50 lines of install log ---'; \
-        Get-ChildItem 'C:\setup\logs' -Filter '*.log' | Sort-Object LastWriteTime -Descending | \
-            Select-Object -First 1 | Get-Content | Select-Object -Last 50; \
+        Write-Host '--- ODT logs (C:\setup\logs) ---'; \
+        Get-ChildItem 'C:\setup\logs' -Filter '*.log' -ErrorAction SilentlyContinue | \
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1 | \
+            ForEach-Object { Get-Content $_.FullName | Select-Object -Last 80 }; \
+        Write-Host '--- Windows Temp logs ---'; \
+        Get-ChildItem 'C:\Windows\Temp' -Filter '*.log' -ErrorAction SilentlyContinue | \
+            Where-Object { $_.Name -match 'Office|C2R|ODT|Setup' } | \
+            Sort-Object LastWriteTime -Descending | Select-Object -First 2 | \
+            ForEach-Object { Write-Host ('Log: ' + $_.FullName); Get-Content $_.FullName | Select-Object -Last 40 }; \
         throw ('Office installation failed: exit code ' + $LASTEXITCODE); \
     }; \
     if (-not (Test-Path 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE')) { \
-        Write-Host '--- Last 50 lines of install log ---'; \
-        Get-ChildItem 'C:\setup\logs' -Filter '*.log' | Sort-Object LastWriteTime -Descending | \
-            Select-Object -First 1 | Get-Content | Select-Object -Last 50; \
         throw 'EXCEL.EXE not found after installation - install may have silently failed'; \
     }; \
     Write-Host 'Office installed successfully'
@@ -80,4 +85,5 @@ WORKDIR /app
 COPY . .
 
 RUN pip install -r requirements.txt
+
 RUN python C:\app\xl_pdf_watcher.py data\in --interval 5 --pdf-mode standard

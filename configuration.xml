@@ -1,6 +1,6 @@
 <Configuration>
-  <Add OfficeClientEdition="64" Channel="PerpetualVL2019" SourcePath="C:\setup\officesource">
-    <Product ID="ProPlus2019Volume">
+  <Add OfficeClientEdition="64" Channel="PerpetualVL2021" SourcePath="C:\setup\officesource">
+    <Product ID="ProPlus2021Volume">
       <Language ID="en-us" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
