@@ -16,14 +16,15 @@ RUN choco install python --version=3.12.0 -y; \
 WORKDIR /setup
 COPY configuration.xml .
 
+# These folders are required for Excel COM Automation to function on Server Core
+RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force; \
+    New-Item -Path 'C:\Windows\SysWOW64\config\systemprofile\Desktop' -ItemType Directory -Force
+
 RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_17328-20162.exe" -OutFile "odt.exe"; \
-    # Extract ODT
     Start-Process ./odt.exe -ArgumentList '/quiet', '/passive', '/extract:.' -Wait; \
-    # Run the actual Office Installation
     Write-Host "Installing Office... this will take a while."; \
     Start-Process ./setup.exe -ArgumentList '/configure', 'configuration.xml' -Wait; \
-    # Cleanup
-    Remove-Item -Path C:\setup -Recycle -Force
+    Remove-Item -Path C:\setup -Recurse -Force
 
 # 4. Set Path for Python
 RUN $env:Path += ';C:\Python312;C:\Python312\Scripts'; \
