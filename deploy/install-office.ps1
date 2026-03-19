@@ -1,17 +1,6 @@
-#Requires -RunAsAdministrator
 <#
 .SYNOPSIS
-    Installs Microsoft 365 Apps (Excel only) on a GCE Windows Server VM
-    using the Office Deployment Tool (ODT).
-
-.DESCRIPTION
-    Downloads ODT, creates a minimal configuration that installs only Excel,
-    and runs the silent install. Uses a shared/device license so no user
-    sign-in is required for COM automation.
-
-    NOTE: You must have valid Microsoft 365 licensing (e.g. Microsoft 365 Apps
-    for enterprise via volume licensing, or an E3/E5 subscription assigned to
-    the VM's service account).
+    Docker-optimized Excel Installer for Windows Server Core.
 #>
 
 param(
@@ -20,42 +9,51 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== Installing Excel via Office Deployment Tool ===" -ForegroundColor Cyan
+Write-Host "=== Starting Docker-Optimized Excel Installation ===" -ForegroundColor Cyan
 
 # ---------------------------------------------------------------------------
-# 1. Download ODT
+# 1. Setup Environment
 # ---------------------------------------------------------------------------
-Write-Host "`n[1/3] Downloading Office Deployment Tool ..." -ForegroundColor Yellow
-
 if (-not (Test-Path $OdtDir)) {
     New-Item -ItemType Directory -Path $OdtDir -Force | Out-Null
 }
 
-$odtUrl = "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18129-20158.exe"
-$odtExe = "$OdtDir\odt-setup.exe"
-
-if (-not (Test-Path "$OdtDir\setup.exe")) {
-    Write-Host "  Downloading ODT..."
-    Invoke-WebRequest -Uri $odtUrl -OutFile $odtExe -UseBasicParsing
-    Write-Host "  Extracting ODT..."
-    Start-Process -Wait -FilePath $odtExe -ArgumentList "/extract:$OdtDir", "/quiet"
-    Remove-Item $odtExe -Force -ErrorAction SilentlyContinue
-    Write-Host "  ODT extracted to: $OdtDir"
-} else {
-    Write-Host "  ODT already present at: $OdtDir"
+# Ensure the Office AppData folder exists (prevents common 1603 errors in Docker)
+$appDataPath = "C:\Users\ContainerAdministrator\AppData\Local\Microsoft\Office"
+if (-not (Test-Path $appDataPath)) {
+    New-Item -Path $appDataPath -ItemType Directory -Force | Out-Null
 }
 
 # ---------------------------------------------------------------------------
-# 2. Create configuration XML (Excel only, shared activation)
+# 2. Download ODT (Using .NET WebClient for stability in Docker)
 # ---------------------------------------------------------------------------
-Write-Host "`n[2/3] Creating configuration ..." -ForegroundColor Yellow
+Write-Host "[1/3] Downloading Office Deployment Tool..." -ForegroundColor Yellow
+$odtUrl = "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18129-20158.exe"
+$odtExe = Join-Path $OdtDir "odt-setup.exe"
+
+try {
+    $webClient = New-Object System.Net.WebClient
+    $webClient.DownloadFile($odtUrl, $odtExe)
+} catch {
+    Write-Host "FAILED: Could not download ODT. Check internet connection." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "  Extracting ODT..."
+# Calling the exe directly with & is more reliable in Docker than Start-Process -Wait
+& $odtExe /extract:$OdtDir /quiet
+Start-Sleep -Seconds 3 # Brief pause to allow extraction to handle file locks
+
+# ---------------------------------------------------------------------------
+# 3. Create configuration XML
+# ---------------------------------------------------------------------------
+Write-Host "[2/3] Creating configuration..." -ForegroundColor Yellow
 
 $configXml = @"
 <Configuration>
   <Add OfficeClientEdition="64" Channel="MonthlyEnterprise">
     <Product ID="O365ProPlusRetail">
       <Language ID="en-us" />
-      <!-- Install ONLY Excel — exclude everything else -->
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
       <ExcludeApp ID="Lync" />
@@ -74,38 +72,29 @@ $configXml = @"
 </Configuration>
 "@
 
-$configPath = "$OdtDir\excel-only.xml"
+$configPath = Join-Path $OdtDir "excel-only.xml"
 $configXml | Out-File -FilePath $configPath -Encoding UTF8
-Write-Host "  Config written: $configPath"
+Write-Host "  Config written to: $configPath"
 
 # ---------------------------------------------------------------------------
-# 3. Run Office install
+# 4. Run Office install
 # ---------------------------------------------------------------------------
-Write-Host "`n[3/3] Installing Excel (this may take 5-10 minutes) ..." -ForegroundColor Yellow
+Write-Host "[3/3] Installing Excel (this takes time, please wait)..." -ForegroundColor Yellow
 
-$setupExe = "$OdtDir\setup.exe"
-Write-Host "  Running: setup.exe /configure excel-only.xml"
+$setupExe = Join-Path $OdtDir "setup.exe"
 
-$proc = Start-Process -Wait -PassThru -FilePath $setupExe `
-    -ArgumentList "/configure", $configPath
+# We use -PassThru to capture the ExitCode accurately
+$proc = Start-Process -FilePath $setupExe -ArgumentList "/configure", "`"$configPath`"" -Wait -PassThru -NoNewWindow
 
-if ($proc.ExitCode -eq 0) {
-    Write-Host ""
-    Write-Host "=== Excel installed successfully ===" -ForegroundColor Green
-
-    # Verify
-    $excelPath = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\excel.exe" -ErrorAction SilentlyContinue
-    if ($excelPath) {
-        Write-Host "  Excel path: $($excelPath.'(default)')"
-    }
-
-    Write-Host ""
-    Write-Host "  Excel is ready for COM automation." -ForegroundColor Cyan
-    Write-Host "  You can now start the lana-excel-watcher service:"
-    Write-Host "    Start-Service lana-excel-watcher"
+# 0 = Success
+# 3010 = Success (Reboot required - common and safe to ignore in Docker)
+if ($proc.ExitCode -eq 0 -or $proc.ExitCode -eq 3010) {
+    Write-Host "=== Excel installed successfully (Exit Code: $($proc.ExitCode)) ===" -ForegroundColor Green
+    
+    # Clean up installer files to keep Docker image small
+    Remove-Item $odtExe -Force -ErrorAction SilentlyContinue
 } else {
-    Write-Host ""
-    Write-Host "=== Excel install failed (exit code: $($proc.ExitCode)) ===" -ForegroundColor Red
-    Write-Host "  Check the ODT logs at: $OdtDir"
+    Write-Host "=== ERROR: Excel install failed (Exit Code: $($proc.ExitCode)) ===" -ForegroundColor Red
+    Write-Host "Check ODT logs in C:\Windows\Temp (usually named like YOURCOMPUTER-*.log)"
     exit 1
 }

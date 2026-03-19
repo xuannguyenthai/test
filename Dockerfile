@@ -1,4 +1,3 @@
-# escape=`
 FROM mcr.microsoft.com/windows/servercore/iis:windowsservercore-ltsc2025
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
@@ -9,10 +8,10 @@ SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPref
 COPY . C:/app/
 
 WORKDIR C:/app
-
+USER ContainerAdministrator
 # ── Run install scripts as Administrator ─────────────────────────────────────
-RUN powershell -ExecutionPolicy Bypass -File C:\app\deploy\install-office.ps1
-RUN powershell -ExecutionPolicy Bypass -File C:\app\deploy\setup-gce-vm.ps1
+RUN powershell -NoProfile -ExecutionPolicy Bypass -File C:\app\deploy\install-office.ps1
+RUN powershell  -NoProfile  -ExecutionPolicy Bypass -File C:\app\deploy\setup-gce-vm.ps1
 
 # ── Install Python dependencies ──────────────────────────────────────────────
 RUN pip install --no-cache-dir -r C:\app\requirements.txt
