@@ -2,6 +2,16 @@
   <Add OfficeClientEdition="64" Channel="Current" SourcePath="C:\setup\officesource">
     <Product ID="O365ProPlusRetail">
       <Language ID="en-us" />
+      <ExcludeApp ID="Access" />
+      <ExcludeApp ID="Groove" />
+      <ExcludeApp ID="Lync" />
+      <ExcludeApp ID="OneDrive" />
+      <ExcludeApp ID="OneNote" />
+      <ExcludeApp ID="Outlook" />
+      <ExcludeApp ID="PowerPoint" />
+      <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="Teams" />
+      <ExcludeApp ID="Word" />
     </Product>
   </Add>
   <Display Level="None" AcceptEULA="TRUE" />
