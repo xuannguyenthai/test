@@ -17,4 +17,5 @@
   <Display Level="None" AcceptEULA="TRUE" />
   <Property Name="SharedComputerLicensing" Value="1" />
   <Property Name="AUTOACTIVATE" Value="1" />
+  <Updates Enabled="FALSE" />
 </Configuration>

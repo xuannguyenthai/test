@@ -30,7 +30,7 @@ RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/6c1eeb25-cf8
     if (-not (Test-Path 'C:\setup\officesource')) { throw "Office source download failed" }; \
     Write-Host "Installing Office from local source..."; \
     Start-Process ./setup.exe -ArgumentList '/configure configuration.xml' -Wait; \
-    $timeout = 600; $elapsed = 0; \
+    $timeout = 1800; $elapsed = 0; \
     while (-not (Test-Path 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE') -and $elapsed -lt $timeout) { \
         Write-Host "Waiting for Office... $elapsed s"; \
         Start-Sleep -s 10; \
