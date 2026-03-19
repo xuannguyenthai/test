@@ -95,6 +95,13 @@ if ($proc.ExitCode -eq 0 -or $proc.ExitCode -eq 3010) {
     Remove-Item $odtExe -Force -ErrorAction SilentlyContinue
 } else {
     Write-Host "=== ERROR: Excel install failed (Exit Code: $($proc.ExitCode)) ===" -ForegroundColor Red
-    Write-Host "Check ODT logs in C:\Windows\Temp (usually named like YOURCOMPUTER-*.log)"
+
+    # This helps us see the ACTUAL error from Microsoft's logs inside the Docker console
+    Write-Host "Searching for setup logs in C:\Windows\Temp..." -ForegroundColor Gray
+    Get-ChildItem -Path "C:\Windows\Temp" -Filter "*.log" |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1 |
+        Get-Content -Tail 30
+
     exit 1
 }
