@@ -40,3 +40,4 @@ WORKDIR /app
 COPY . .
 
 CMD ["python", "C:\\app\\excel_to_pdf.py"]
+RUN Get-ChildItem -Path C:\app\data\out -Recurse
