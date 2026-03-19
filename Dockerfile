@@ -17,7 +17,7 @@ RUN powershell  -NoProfile  -ExecutionPolicy Bypass -File C:\app\deploy\setup-gc
 RUN pip install --no-cache-dir -r C:\app\requirements.txt
 
 # ── Create a restricted local user ──────────────────────────────────────────
-RUN net user appuser SecureP@ss123! /add; `
+RUN net user appuser SecureP@ss123! /add; \
     net localgroup Users appuser /add
 
 # ── Switch to normal user ────────────────────────────────────────────────────
