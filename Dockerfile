@@ -48,8 +48,9 @@ RUN Write-Host 'Downloading Office source files (PerpetualVL2021)...'; \
     Write-Host 'Office source files downloaded successfully'
 
 RUN Write-Host 'Installing Office...'; \
-    & ./setup.exe /configure configuration.xml; \
-    if ($LASTEXITCODE -ne 0) { \
+    $p = Start-Process -FilePath './setup.exe' -ArgumentList '/configure configuration.xml' -Wait -PassThru; \
+    $exitCode = $p.ExitCode; \
+    if ($exitCode -ne 0) { \
         Write-Host ''; \
         Write-Host '========== DIAGNOSTIC DUMP =========='; \
         Write-Host '--- Application Event Log (last 20 errors) ---'; \
@@ -84,7 +85,7 @@ RUN Write-Host 'Installing Office...'; \
                 Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -Last 60 | Write-Host; \
             }; \
         Write-Host '====================================='; \
-        throw ('Office installation failed: exit code ' + $LASTEXITCODE); \
+        throw ('Office installation failed: exit code ' + $exitCode); \
     }; \
     if (-not (Test-Path 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE')) { \
         throw 'EXCEL.EXE not found after installation - install may have silently failed'; \
