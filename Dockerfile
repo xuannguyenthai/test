@@ -40,4 +40,4 @@ WORKDIR /app
 COPY . .
 
 RUN pip install -r requirements.txt
-RUN python C:\\app\\xl_pdf_watcher.py --interval 5 --pdf-mode standard
+RUN python C:\app\xl_pdf_watcher.py data\in --interval 5 --pdf-mode standard
