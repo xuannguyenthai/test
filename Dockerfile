@@ -20,7 +20,7 @@ COPY configuration.xml .
 RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force; \
     New-Item -Path 'C:\Windows\SysWOW64\config\systemprofile\Desktop' -ItemType Directory -Force
 
-RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_17328-20162.exe" -OutFile "odt.exe"; \
+RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18129-20158.exe" -OutFile "odt.exe"; \
     Start-Process ./odt.exe -ArgumentList '/quiet', '/passive', '/extract:.' -Wait; \
     Start-Process ./setup.exe -ArgumentList '/configure', 'configuration.xml' -Wait; \
     Write-Host "Waiting for background processes to settle..."; \
