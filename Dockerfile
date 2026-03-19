@@ -7,7 +7,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; \
     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
-# 2. Install Python and Visual C++ Redistributable (required for Office COM automation / Python C-extensions)
+# 2. Install Python and Visual C++ Redistributable
 RUN choco install python --version=3.12.0 -y; \
     choco install vcredist140 -y
 
@@ -21,50 +21,46 @@ COPY configuration.xml .
 
 RUN New-Item -Path 'C:\setup\logs' -ItemType Directory -Force
 
-RUN Write-Host "Downloading Office Deployment Tool..."; \
+RUN Write-Host 'Downloading Office Deployment Tool...'; \
     Invoke-WebRequest \
-        -Uri "https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19725-20126.exe" \
-        -OutFile "odt.exe" -UseBasicParsing; \
+        -Uri 'https://download.microsoft.com/download/6c1eeb25-cf8b-41d9-8d0d-cc1dbc032140/officedeploymenttool_19725-20126.exe' \
+        -OutFile 'odt.exe' -UseBasicParsing; \
     $size = (Get-Item odt.exe).Length; \
-    if ($size -lt 1MB) { throw "ODT download too small: $size bytes" }; \
-    Write-Host "Extracting ODT..."; \
-    # Use & (call operator) instead of Start-Process so PowerShell blocks until fully complete \
+    if ($size -lt 1MB) { throw ('ODT download too small: ' + $size + ' bytes') }; \
+    Write-Host 'Extracting ODT...'; \
     & ./odt.exe /quiet /extract:.; \
-    if ($LASTEXITCODE -ne 0) { throw "ODT extraction failed: exit code $LASTEXITCODE" }; \
-    Write-Host "ODT extracted successfully"
+    if ($LASTEXITCODE -ne 0) { throw ('ODT extraction failed: exit code ' + $LASTEXITCODE) }; \
+    Write-Host 'ODT extracted successfully'
 
-RUN Write-Host "Downloading Office source files (PerpetualVL2019)..."; \
+RUN Write-Host 'Downloading Office source files (PerpetualVL2019)...'; \
     & ./setup.exe /download configuration.xml; \
-    if ($LASTEXITCODE -ne 0) { throw "Office source download failed: exit code $LASTEXITCODE" }; \
-    if (-not (Test-Path 'C:\setup\officesource')) { throw "Office source directory not created" }; \
-    Write-Host "Office source files downloaded successfully"
+    if ($LASTEXITCODE -ne 0) { throw ('Office source download failed: exit code ' + $LASTEXITCODE) }; \
+    if (-not (Test-Path 'C:\setup\officesource')) { throw 'Office source directory not created' }; \
+    Write-Host 'Office source files downloaded successfully'
 
-RUN Write-Host "Installing Office..."; \
-    # Use & so the process tree fully completes before Docker continues — \
-    # this is the critical fix vs Start-Process -Wait, which only waits for the \
-    # launcher (setup.exe) to exit, not the ClickToRun worker it spawns. \
+RUN Write-Host 'Installing Office...'; \
     & ./setup.exe /configure configuration.xml; \
     if ($LASTEXITCODE -ne 0) { \
-        Write-Host "--- Last 50 lines of install log ---"; \
+        Write-Host '--- Last 50 lines of install log ---'; \
         Get-ChildItem 'C:\setup\logs' -Filter '*.log' | Sort-Object LastWriteTime -Descending | \
             Select-Object -First 1 | Get-Content | Select-Object -Last 50; \
-        throw "Office installation failed: exit code $LASTEXITCODE"; \
+        throw ('Office installation failed: exit code ' + $LASTEXITCODE); \
     }; \
     if (-not (Test-Path 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE')) { \
-        Write-Host "--- Last 50 lines of install log ---"; \
+        Write-Host '--- Last 50 lines of install log ---'; \
         Get-ChildItem 'C:\setup\logs' -Filter '*.log' | Sort-Object LastWriteTime -Descending | \
             Select-Object -First 1 | Get-Content | Select-Object -Last 50; \
-        throw "EXCEL.EXE not found after installation — install may have silently failed"; \
+        throw 'EXCEL.EXE not found after installation - install may have silently failed'; \
     }; \
-    Write-Host "Office installed successfully"
+    Write-Host 'Office installed successfully'
 
 # 5. Register Excel COM server and verify
-RUN Write-Host "Registering Excel COM server..."; \
+RUN Write-Host 'Registering Excel COM server...'; \
     & 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE' /regserver; \
     Start-Sleep -Seconds 5; \
     $key = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Classes\Excel.Application\CLSID' -ErrorAction SilentlyContinue; \
-    if (-not $key) { throw "Excel COM class not registered — /regserver may have failed" }; \
-    Write-Host "Verified: Excel.Application COM class registered at $($key.'(default)')"
+    if (-not $key) { throw 'Excel COM class not registered - /regserver may have failed' }; \
+    Write-Host ('Verified: Excel.Application COM class registered at ' + $key.'(default)')
 
 # 6. Clean up Office setup files to reduce image size
 WORKDIR /
@@ -73,10 +69,10 @@ RUN Remove-Item -Path C:\setup -Recurse -Force
 # 7. Set PATH for Python persistently
 RUN $current = [Environment]::GetEnvironmentVariable('Path', [EnvironmentVariableTarget]::Machine); \
     $additions = 'C:\Python312;C:\Python312\Scripts'; \
-    if ($current -notlike "*Python312*") { \
-        [Environment]::SetEnvironmentVariable('Path', "$current;$additions", [EnvironmentVariableTarget]::Machine); \
+    if ($current -notlike '*Python312*') { \
+        [Environment]::SetEnvironmentVariable('Path', ($current + ';' + $additions), [EnvironmentVariableTarget]::Machine); \
     }; \
-    Write-Host "Python PATH configured"
+    Write-Host 'Python PATH configured'
 
 # 8. Copy application and install dependencies
 WORKDIR /app
