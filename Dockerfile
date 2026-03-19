@@ -35,4 +35,8 @@ RUN Remove-Item -Path C:\setup -Recurse -Force
 RUN $env:Path += ';C:\Python312;C:\Python312\Scripts'; \
     [Environment]::SetEnvironmentVariable('Path', $env:Path, [EnvironmentVariableTarget]::Machine)
 
-CMD ["powershell"]
+# 5. Copy entire folder and run the script
+WORKDIR /app
+COPY . .
+
+CMD ["python", "C:\\app\\excel_to_pdf.py"]
