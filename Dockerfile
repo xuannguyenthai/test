@@ -22,8 +22,10 @@ RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType 
 
 RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_17328-20162.exe" -OutFile "odt.exe"; \
     Start-Process ./odt.exe -ArgumentList '/quiet', '/passive', '/extract:.' -Wait; \
-    Write-Host "Installing Office... this will take a while."; \
     Start-Process ./setup.exe -ArgumentList '/configure', 'configuration.xml' -Wait; \
+    Write-Host "Waiting for background processes to settle..."; \
+    Start-Sleep -s 30; \
+    Get-Process | Where-Object {$_.Name -like '*setup*' -or $_.Name -like '*office*'} | Stop-Process -Force -ErrorAction SilentlyContinue; \
     Remove-Item -Path C:\setup -Recurse -Force
 
 # 4. Set Path for Python
