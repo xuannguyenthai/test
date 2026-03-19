@@ -1,5 +1,5 @@
 # Use Server Core for a smaller footprint
-FROM mcr.microsoft.com/windows/servercore:ltsc2025
+FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
@@ -34,10 +34,3 @@ RUN Remove-Item -Path C:\setup -Recurse -Force
 # 4. Set Path for Python
 RUN $env:Path += ';C:\Python312;C:\Python312\Scripts'; \
     [Environment]::SetEnvironmentVariable('Path', $env:Path, [EnvironmentVariableTarget]::Machine)
-
-# 5. Copy entire folder and run the script
-WORKDIR /app
-COPY . .
-
-RUN pip install -r requirements.txt
-RUN python C:\app\xl_pdf_watcher.py data\in --interval 5 --pdf-mode standard
