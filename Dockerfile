@@ -39,4 +39,5 @@ RUN $env:Path += ';C:\Python312;C:\Python312\Scripts'; \
 WORKDIR /app
 COPY . .
 
-CMD ["python", "C:\\app\\excel_to_pdf.py"]
+RUN pip install -r requirements.txt
+RUN python C:\\app\\excel_to_pdf.py
