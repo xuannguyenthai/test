@@ -25,8 +25,11 @@ RUN Invoke-WebRequest -Uri "https://download.microsoft.com/download/2/7/A/27AF1B
     Start-Process ./setup.exe -ArgumentList '/configure', 'configuration.xml' -Wait; \
     Write-Host "Waiting for background processes to settle..."; \
     Start-Sleep -s 30; \
-    Get-Process | Where-Object {$_.Name -like '*setup*' -or $_.Name -like '*office*'} | Stop-Process -Force -ErrorAction SilentlyContinue; \
-    Remove-Item -Path C:\setup -Recurse -Force
+    Get-Process | Where-Object {$_.Name -like '*setup*' -or $_.Name -like '*office*'} | Stop-Process -Force -ErrorAction SilentlyContinue
+
+# Change WORKDIR away from C:\setup before deleting it
+WORKDIR /
+RUN Remove-Item -Path C:\setup -Recurse -Force
 
 # 4. Set Path for Python
 RUN $env:Path += ';C:\Python312;C:\Python312\Scripts'; \
