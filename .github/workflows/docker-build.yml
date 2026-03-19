@@ -18,7 +18,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker Image
-        run: docker build -t starfall07g/window:latest .
+        run: docker build --progress=plain -t starfall07g/window:latest .
 
       - name: Push Docker Image
         run: docker push starfall07g/window:latest
