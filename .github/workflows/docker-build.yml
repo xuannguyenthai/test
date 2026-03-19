@@ -11,17 +11,68 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log xl_pdf to Docker Hub
-        uses: docker/login-action@v3
+      - name: Create required Desktop dirs for Excel COM
+        shell: powershell
+        run: |
+          New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force
+          New-Item -Path 'C:\Windows\SysWOW64\config\systemprofile\Desktop' -ItemType Directory -Force
+
+      - name: Download and extract ODT
+        shell: powershell
+        run: |
+          New-Item -Path 'C:\setup' -ItemType Directory -Force
+          New-Item -Path 'C:\setup\logs' -ItemType Directory -Force
+          Copy-Item configuration.xml C:\setup\
+          Invoke-WebRequest `
+            -Uri 'https://download.microsoft.com/download/2/7/A/27AF1BE6-DD20-4CB4-B154-EBAB8A7D4A7E/officedeploymenttool_18129-20158.exe' `
+            -OutFile 'C:\setup\odt.exe' -UseBasicParsing
+          $size = (Get-Item 'C:\setup\odt.exe').Length
+          if ($size -lt 1MB) { throw ('ODT download too small: ' + $size + ' bytes') }
+          Start-Process -FilePath 'C:\setup\odt.exe' -ArgumentList '/quiet /extract:C:\setup' -Wait -PassThru | Out-Null
+          Start-Sleep -Seconds 3
+          if (-not (Test-Path 'C:\setup\setup.exe')) { throw 'ODT extraction failed - setup.exe not found' }
+          Write-Host 'ODT extracted successfully'
+
+      - name: Download Office source files
+        shell: powershell
+        working-directory: C:\setup
+        run: |
+          & ./setup.exe /download configuration.xml
+          if ($LASTEXITCODE -ne 0) { throw ('Office source download failed: exit code ' + $LASTEXITCODE) }
+          if (-not (Test-Path 'C:\setup\officesource')) { throw 'Office source directory not created' }
+          Write-Host 'Office source downloaded successfully'
+
+      - name: Install Office
+        shell: powershell
+        working-directory: C:\setup
+        run: |
+          & ./setup.exe /configure configuration.xml
+          if ($LASTEXITCODE -ne 0) { throw ('Office installation failed: exit code ' + $LASTEXITCODE) }
+          if (-not (Test-Path 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE')) {
+            throw 'EXCEL.EXE not found after installation'
+          }
+          Write-Host 'Office installed successfully'
+
+      - name: Register Excel COM server
+        shell: powershell
+        run: |
+          & 'C:\Program Files\Microsoft Office\root\Office16\EXCEL.EXE' /regserver
+          Start-Sleep -Seconds 5
+          $key = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Classes\Excel.Application\CLSID' -ErrorAction SilentlyContinue
+          if (-not $key) { throw 'Excel COM class not registered' }
+          Write-Host ('Excel COM registered at ' + $key.'(default)')
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          python-version: '3.12'
 
-      - name: Build Docker Image
-        run: docker build -t starfall07g/window:latest .
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
 
-      - name: List files xl_pdf data/out
-        run: docker run --rm starfall07g/window:latest powershell -Command "Get-ChildItem -Path C:\app\data\in\p1\xl_pdf -Recurse"
+      - name: Run xl_pdf watcher
+        run: python C:\app\xl_pdf_watcher.py data\in --interval 5 --pdf-mode standard
 
-      - name: Push Docker Image
-        run: docker push starfall07g/window:latest
+      - name: List files in data/out
+        shell: powershell
+        run: Get-ChildItem -Path C:\app\data\in\p1\xl_pdf -Recurse

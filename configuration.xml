@@ -1,6 +1,6 @@
 <Configuration>
-  <Add OfficeClientEdition="64" Channel="PerpetualVL2021" SourcePath="C:\setup\officesource">
-    <Product ID="ProPlus2021Volume">
+  <Add OfficeClientEdition="64" Channel="Current">
+    <Product ID="O365ProPlusRetail">
       <Language ID="en-us" />
       <ExcludeApp ID="Access" />
       <ExcludeApp ID="Groove" />
@@ -15,8 +15,5 @@
     </Product>
   </Add>
   <Display Level="None" AcceptEULA="TRUE" />
-  <Property Name="AUTOACTIVATE" Value="0" />
-  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
-  <Updates Enabled="FALSE" />
-  <Logging Level="Standard" Path="C:\setup\logs" />
+  <Property Name="SharedComputerLicensing" Value="0" />
 </Configuration>
