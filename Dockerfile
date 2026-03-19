@@ -28,8 +28,9 @@ RUN Write-Host 'Downloading Office Deployment Tool...'; \
     $size = (Get-Item odt.exe).Length; \
     if ($size -lt 1MB) { throw ('ODT download too small: ' + $size + ' bytes') }; \
     Write-Host 'Extracting ODT...'; \
-    & ./odt.exe /quiet /extract:.; \
-    if ($LASTEXITCODE -ne 0) { throw ('ODT extraction failed: exit code ' + $LASTEXITCODE) }; \
+    Start-Process -FilePath './odt.exe' -ArgumentList '/quiet /extract:.' -Wait -PassThru | Out-Null; \
+    Start-Sleep -Seconds 3; \
+    if (-not (Test-Path 'setup.exe')) { throw 'ODT extraction failed - setup.exe not found after extraction' }; \
     Write-Host 'ODT extracted successfully'
 
 RUN Write-Host 'Downloading Office source files (PerpetualVL2019)...'; \
