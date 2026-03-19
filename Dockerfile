@@ -10,8 +10,7 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
 
 # 2. Install Python and Visual C++ Redistributables
 RUN choco install python --version=3.12.0 -y; \
-    choco install vcredist140 -y; \
-    choco install vcredist2019 -y
+    choco install vcredist140 -y
 
 # 3. Create Desktop directories required for Excel COM automation on Server Core
 RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType Directory -Force; \
@@ -85,5 +84,6 @@ WORKDIR /app
 COPY . .
 
 RUN pip install -r requirements.txt
+
 
 RUN python C:\app\xl_pdf_watcher.py data\in --interval 5 --pdf-mode standard
