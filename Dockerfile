@@ -18,12 +18,9 @@ RUN New-Item -Path 'C:\Windows\System32\config\systemprofile\Desktop' -ItemType 
 
 # 4. Enable WER crash dumps so child-process crashes are captured
 RUN New-Item -Path 'C:\CrashDumps' -ItemType Directory -Force; \
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps' `
-        -Name 'DumpFolder' -Value 'C:\CrashDumps' -Type ExpandString -Force -ErrorAction SilentlyContinue; \
-    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps' `
-        -Name 'DumpType' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue; \
-    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' `
-        -Name 'ForceQueue' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue; \
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps' -Name 'DumpFolder' -Value 'C:\CrashDumps' -Type ExpandString -Force -ErrorAction SilentlyContinue; \
+    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps' -Name 'DumpType' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue; \
+    New-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting' -Name 'ForceQueue' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue; \
     Write-Host 'WER crash dump capture enabled'
 
 # 5. Download Office Deployment Tool, fetch source files, and install Office
