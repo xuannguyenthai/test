@@ -1,5 +1,5 @@
 <Configuration>
-  <Add OfficeClientEdition="64" Channel="Current">
+  <Add OfficeClientEdition="64" Channel="Current" SourcePath="C:\setup\officesource">
     <Product ID="O365ProPlusRetail">
       <Language ID="en-us" />
       <ExcludeApp ID="Access" />
@@ -15,5 +15,6 @@
     </Product>
   </Add>
   <Display Level="None" AcceptEULA="TRUE" />
-  <Property Name="SharedComputerLicensing" Value="0" />
+  <Property Name="AUTOACTIVATE" Value="0" />
+  <Updates Enabled="FALSE" />
 </Configuration>
