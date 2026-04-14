@@ -25,6 +25,9 @@ jobs:
     name: Deploy to ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
     # We map the input to a job-level env variable for clean access
+    permissions:
+      issues: write      # Required to create the approval issue
+      contents: read
     env:
       TF_ENV: "prod"
 
