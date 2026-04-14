@@ -1,14 +1,14 @@
 name: Manual Deploy With Git Tag
 
 on:
-  workflow_dispatch: # Must be indented 2 spaces
-    inputs:          # Must be indented 4 spaces
-      tag:           # Must be indented 6 spaces
-        description: "Git tag to deploy..."
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Git tag to deploy (e.g., 2026.2.1-abc1234)"
         required: true
         type: string
       environment:
-        description: "staging (default), prod"
+        description: "Target environment: staging or prod"
         required: true
         type: choice
         options:
@@ -21,10 +21,38 @@ on:
         type: string
 
 jobs:
-  detect-environment:
-    name: Detect Environment
+  deploy:
+    name: Deploy to ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
+    # We map the input to a job-level env variable for clean access
+    env:
+      TF_ENV: "prod"
+
     steps:
-      - id: set-env
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag }}
+
+      - name: Prod and Org Approval
+        # Logic: Runs if the environment string contains 'prod' or 'org'
+        if: contains(env.TF_ENV, 'prod') || contains(env.TF_ENV, 'org')
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: xuannguyenthai
+          minimum-approvals: 1
+          issue-title: "Approval needed for Terraform apply in ${{ env.TF_ENV }}"
+          issue-body: |
+            ### Deployment Approval Request
+            - **Environment:** ${{ env.TF_ENV }}
+            - **Tag:** ${{ github.event.inputs.tag }}
+            - **Reason:** ${{ github.event.inputs.reason }}
+            - **Requested By:** @${{ github.actor }}
+          exclude-workflow-initiator-as-approver: false
+          timeout-minutes: 60
+
+      - name: Next step
         run: |
-          echo "Hi"
+          echo "Starting deployment for: ${{ env.TF_ENV }}"
+          echo "Current working directory: $(pwd)"
