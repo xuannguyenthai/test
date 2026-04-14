@@ -31,8 +31,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.tag }}
+
 
       - name: Prod and Org Approval
         # Logic: Runs if the environment string contains 'prod' or 'org'
