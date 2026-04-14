@@ -1,10 +1,10 @@
 name: Manual Deploy With Git Tag
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Git tag to deploy. It must be of the format like 2026.2.1-abc1234 and created from main branch."
+  workflow_dispatch: # Must be indented 2 spaces
+    inputs:          # Must be indented 4 spaces
+      tag:           # Must be indented 6 spaces
+        description: "Git tag to deploy..."
         required: true
         type: string
       environment:
