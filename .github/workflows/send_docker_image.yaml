@@ -39,7 +39,7 @@ jobs:
         if: contains(env.TF_ENV, 'prod') || contains(env.TF_ENV, 'org')
         uses: trstringer/manual-approval@v1
         with:
-          secret: ${{ secrets.GITHUB_TOKEN }}
+          secret: ${{ github.TOKEN  }}
           approvers: xuannguyenthai
           minimum-approvals: 1
           issue-title: "Approval needed for Terraform apply in ${{ env.TF_ENV }}"
