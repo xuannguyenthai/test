@@ -18,7 +18,7 @@ on:
       - develop
       - staging
       - 'release/**'
-    types: [opened, synchronize, reopened]
+    types: [opened, reopened]
 
 
 permissions:
