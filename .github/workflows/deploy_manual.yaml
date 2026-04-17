@@ -1,0 +1,171 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - develop
+          - staging
+          - prod
+        default: staging
+      confirmed_environment:
+        description: "Confirm the deployment environment"
+        required: true
+        type: choice
+        options:
+          - develop
+          - staging
+          - prod
+        default: staging
+      deploy_target:
+        description: "Branch, main-created Tag, or Commit SHA to deploy"
+        required: true
+        type: string
+      description:
+        description: "Description or reason for deployment"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+  pull-requests: write
+
+
+jobs:
+  git-validate:
+    name: Validate Deploy Target
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      deploy-type: ${{ steps.check.outputs.deploy-type }}
+      resolved-ref: ${{ steps.check.outputs.resolved-ref }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Fetch all history for all tags and branches
+
+      - name: Validate
+        id: check
+        run: |
+          DEPLOY_TARGET="${{ inputs.deploy_target }}"
+          ENVIRONMENT="${{ inputs.environment }}"
+          CONFIRM_ENV="${{ inputs.confirmed_environment }}"
+          
+          echo "Validating deploy_target: $DEPLOY_TARGET"
+          echo "Environment: $ENVIRONMENT"
+          
+          # Check if environment and confirmed_environment match
+          if [ "$ENVIRONMENT" != "$CONFIRM_ENV" ]; then
+            echo "❌ Error: Environment mismatch!"
+            echo "Selected: $ENVIRONMENT | Confirmed: $CONFIRM_ENV"
+            exit 1
+          fi
+          echo "✓ Environments match ($ENVIRONMENT)"
+          
+          # Check if it's a tag
+          if git show-ref --tags --verify "refs/tags/$DEPLOY_TARGET" >/dev/null 2>&1; then
+            echo "✓ Deploy target is a tag"
+            
+            # NEW: Enforce that Tags can only be deployed to Prod
+            if [ "$ENVIRONMENT" != "prod" ]; then
+              echo "❌ Error: Tags can only be deployed to the 'prod' environment."
+              echo "Current environment: $ENVIRONMENT"
+              exit 1
+            fi
+  
+            # Check if tag was created from main branch
+            TAG_COMMIT=$(git rev-list -n 1 "$DEPLOY_TARGET")
+            if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main 2>/dev/null; then
+              echo "❌ Error: Tag '$DEPLOY_TARGET' was not created from main branch"
+              exit 1
+            fi
+            echo "✓ Tag was created from main branch"
+            
+            echo "deploy-type=tag" >> $GITHUB_OUTPUT
+            echo "resolved-ref=$TAG_COMMIT" >> $GITHUB_OUTPUT
+            
+          # Check if it's a branch
+          elif git show-ref --heads --verify "refs/heads/$DEPLOY_TARGET" >/dev/null 2>&1 || \
+               git show-ref --verify "refs/remotes/origin/$DEPLOY_TARGET" >/dev/null 2>&1; then
+            echo "✓ Deploy target is a branch"
+            
+            # For prod environment, only tags are allowed
+            if [ "$ENVIRONMENT" == "prod" ]; then
+              echo "❌ Error: Production environment only accepts tags, not branches"
+              exit 1
+            fi
+            
+            BRANCH_COMMIT=$(git rev-parse "origin/$DEPLOY_TARGET")
+            echo "deploy-type=branch" >> $GITHUB_OUTPUT
+            echo "resolved-ref=$BRANCH_COMMIT" >> $GITHUB_OUTPUT
+            
+          # Check if it's a commit SHA
+          elif git cat-file -e "$DEPLOY_TARGET^{commit}" 2>/dev/null; then
+            echo "✓ Deploy target is a commit SHA"
+            
+            # For prod environment, only tags are allowed
+            if [ "$ENVIRONMENT" == "prod" ]; then
+              echo "❌ Error: Production environment only accepts tags, not commits"
+              exit 1
+            fi
+            
+            COMMIT_SHA=$(git rev-parse "$DEPLOY_TARGET^{commit}")
+            echo "deploy-type=commit" >> $GITHUB_OUTPUT
+            echo "resolved-ref=$COMMIT_SHA" >> $GITHUB_OUTPUT
+            
+          else
+            echo "❌ Error: '$DEPLOY_TARGET' is not a valid tag, branch, or commit SHA"
+            exit 1
+          fi
+          
+          echo "✓ All validations passed"
+
+  send-approval-request:
+    name: Send approval request for deploying ${{ inputs.deploy_target }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: git-validate
+
+    steps:
+      - name: Create Approval Request
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: xuannguyenthai
+          minimum-approvals: 1
+          issue-title: "Approval needed for deploying ${{ inputs.deploy_target }} to ${{ inputs.environment }}"
+          issue-body: |
+            ### 🚀 Deployment Approval Request
+            - **Environment:** `${{ inputs.environment }}`
+            - **Target:** `${{ inputs.deploy_target }}`
+            - **Requested By:** @${{ github.actor }}
+          exclude-workflow-initiator-as-approver: false
+          timeout-minutes: 60
+
+  deploy:
+    name: Deploy ${{ inputs.deploy_target }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    needs: [git-validate, send-approval-request]
+
+    steps:
+      - name: Checkout resolved commit
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.git-validate.outputs.resolved-ref }}
+          fetch-depth: 1
+
+      - name: Resolve image tag
+        id: image-tag
+        run: |
+          IMAGE_TAG="${{ needs.git-validate.outputs.resolved-ref }}"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Resolved image tag: $IMAGE_TAG"
