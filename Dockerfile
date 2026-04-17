@@ -4,6 +4,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends libreoffice-calc && \
     rm -rf /var/lib/apt/lists/*
 
-    
+
 
 
