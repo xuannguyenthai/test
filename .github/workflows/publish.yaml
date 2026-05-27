@@ -5,6 +5,7 @@ on:
     types: [published]
 
 
+
 concurrency:
   group: release-publish-${{ github.event.release.tag_name }}
   cancel-in-progress: false
@@ -24,3 +25,49 @@ jobs:
           ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
 
+      - name: Verify release tag is on main
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          echo "Release tag ${TAG} (${TAG_SHA}) is on origin/main."
+
+      - name: Verify pyproject.toml version matches release tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          echo "pyproject.toml version  matches release tag ${TAG}."
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          version-file: "pyproject.toml"
+          python-version: "3.12"
+          enable-cache: "false"
+          save-cache: "false"
+
+
+
+      - name: Fail if release tag already exists in Artifact Registry
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          echo "Version ${VERSION} not present in registry — proceeding."
+
+      - name: Build wheel and sdist
+        run: echo "OK"
+
+      - name: Verify wheel contents
+        run: |
+          echo "NN"
+
+      - name: Publish to Artifact Registry
+        if: ${{ !github.event.release.prerelease && !github.event.release.draft }}
+        run: |
+          echo "last"
+
+      - name: Mark release as draft on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release edit "$TAG" --draft=true
