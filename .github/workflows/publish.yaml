@@ -1,0 +1,26 @@
+name: Publish PyPI Package
+
+on:
+  release:
+    types: [published, released]
+
+
+concurrency:
+  group: release-publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Build & publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
