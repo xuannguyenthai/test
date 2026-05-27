@@ -2,7 +2,7 @@ name: Publish PyPI Package
 
 on:
   release:
-    types: [published, released]
+    types: [prereleased, released]
 
 
 
@@ -17,9 +17,6 @@ permissions:
 jobs:
   publish:
     name: Build & publish release
-    if: >-
-      github.event.action == 'released' ||
-      (github.event.action == 'published' && github.event.release.prerelease)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout release tag
